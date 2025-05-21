@@ -1,48 +1,86 @@
 #pragma once
 
+#include <iostream>
+
 namespace Tmpl8 {
 
 // single-level fully associative cache
 
-#define CACHELINEWIDTH	64
-#define CACHESIZE		4096				// in bytes
 #define DRAMSIZE		3276800				// 3.125MB; 1024x800 pixels
 
 struct CacheLine
 {
-	uchar bytes[CACHELINEWIDTH] = {};
-	uint tag;
+	CacheLine() = default;
+	CacheLine(int lineWidth) : bytes(new uchar[lineWidth]), tag(0), dirty(false), lineWidth(lineWidth) {}
+	CacheLine(const CacheLine& other) : bytes(new uchar[other.lineWidth]), tag(other.tag), dirty(other.dirty), lineWidth(other.lineWidth)
+	{
+		memcpy(bytes, other.bytes, lineWidth);
+	}
+	~CacheLine() { delete[] bytes; }
+	CacheLine& operator=(const CacheLine& other)
+	{
+		if (this != &other)
+		{
+			delete[] bytes;
+			lineWidth = other.lineWidth;
+			bytes = new uchar[lineWidth];
+			memcpy(bytes, other.bytes, lineWidth);
+			tag = other.tag;
+			dirty = other.dirty;
+		}
+		return *this;
+	}
+	uchar* bytes = nullptr;
+	uint tag = 0;
 	bool dirty = false;
+	int lineWidth = 0;
 };
 
 class Level // abstract base class for a level in the memory hierarchy
 {
 public:
-	virtual void WriteLine( uint address, CacheLine line ) = 0;
+	virtual void WriteLine( uint address, const CacheLine& line ) = 0;
 	virtual CacheLine ReadLine( uint address ) = 0;
 	Level* nextLevel = 0;
 	uint r_hit = 0, r_miss = 0, w_hit = 0, w_miss = 0;
+	int lineWidth = 0;
+	int size = 0;
 };
 
 class Cache : public Level // cache level for the memory hierarchy
 {
 public:
-	void WriteLine( uint address, CacheLine line );
+	Cache(int size, int lineWidth)
+	{
+		this->size = size;
+		this->lineWidth = lineWidth;
+		numSlots = size / lineWidth;
+		slot = new CacheLine[numSlots];
+		for (int i = 0; i < numSlots; i++)
+		{
+			slot[i] = CacheLine(lineWidth);
+		}
+	}
+	~Cache() { delete[] slot; }
+	void WriteLine( uint address, const CacheLine& line );
 	CacheLine ReadLine( uint address );
 	CacheLine& backdoor( int i ) { return slot[i]; } /* for visualization without side effects */
 private:
-	CacheLine slot[CACHESIZE / CACHELINEWIDTH];
+	CacheLine* slot = nullptr;
+	int numSlots = 0;
 };
 
 class Memory : public Level // DRAM level for the memory hierarchy
 {
 public:
-	Memory()
+	Memory(int lineWidth)
 	{
+		this->lineWidth = lineWidth;
 		mem = new uchar[DRAMSIZE];
 		memset( mem, 0, DRAMSIZE ); 
 	}
-	void WriteLine( uint address, CacheLine line );
+	~Memory() { delete[] mem; }
+	void WriteLine( uint address, const CacheLine& line );
 	CacheLine ReadLine( uint address );
 	uchar* backdoor() { return mem; } /* for visualization without side effects */
 private:
@@ -54,8 +92,10 @@ class MemHierarchy // memory hierarchy
 public:
 	MemHierarchy()
 	{
-		l1 = new Cache();
-		l1->nextLevel = l2 = new Memory();
+		l1 = new Cache(4096, 64);
+		l1->nextLevel = l2 = new Cache(4096, 64);
+		l2->nextLevel = l3 = new Cache(4096, 64);
+		l3->nextLevel = memory = new Memory(64);
 	}
 	void WriteByte( uint address, uchar value );
 	uchar ReadByte( uint address );
@@ -65,8 +105,10 @@ public:
 	{
 		l1->r_hit = l1->w_hit = l1->r_miss = l1->w_miss = 0;
 		l2->r_hit = l2->w_hit = l2->r_miss = l2->w_miss = 0;
+		l3->r_hit = l3->w_hit = l3->r_miss = l3->w_miss = 0;
+		memory->r_hit = memory->w_hit = memory->r_miss = memory->w_miss = 0;
 	}
-	Level* l1, *l2; 
+	Level* l1, *l2, *l3, *memory; 
 };
 
 } // namespace Tmpl8
