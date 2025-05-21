@@ -63,8 +63,8 @@ public:
 	uint ReadUint( uint address );
 	void ResetCounters()
 	{
-		l1->r_hit = l1->w_hit = l1->r_miss = l1->r_hit = 0;
-		l2->r_hit = l2->w_hit = l2->r_miss = l2->r_hit = 0;
+		l1->r_hit = l1->w_hit = l1->r_miss = l1->w_miss = 0;
+		l2->r_hit = l2->w_hit = l2->r_miss = l2->w_miss = 0;
 	}
 	Level* l1, *l2; 
 };

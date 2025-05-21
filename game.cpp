@@ -35,10 +35,10 @@ void Game::VisualizeMem()
 	// draw hit/miss graphs
 	screen->Print( "level 1 R/W", 1050, 10, 0xffffff );
 	screen->Print( "DRAM R/W", 1050, 90, 0xffffff );
-	gr[0].Update( screen, 1050, 20, mem.l1->r_miss, mem.l1->r_hit );
-	gr[1].Update( screen, 1170, 20, mem.l1->w_miss, mem.l1->w_hit );
-	gr[2].Update( screen, 1050, 100, mem.l2->r_miss, mem.l2->r_hit );
-	gr[3].Update( screen, 1170, 100, mem.l2->w_miss, mem.l2->w_hit );
+	gr[0].Update( screen, 1050, 20, mem.l1->r_hit, mem.l1->r_miss );
+	gr[1].Update( screen, 1170, 20, mem.l1->w_hit, mem.l1->w_miss );
+	gr[2].Update( screen, 1050, 100, mem.l2->r_hit, mem.l2->r_miss );
+	gr[3].Update( screen, 1170, 100, mem.l2->w_hit, mem.l2->w_miss );
 }
 
 // -----------------------------------------------------------
