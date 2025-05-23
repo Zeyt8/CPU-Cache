@@ -23,13 +23,16 @@ void Game::VisualizeMem()
 
 	// draw the contents of the first cache level over the DRAM contents
 	// fully hardcoded for the sample cache (size, associative, 1 layer)
-	for (int i = 0; i < 64; i++)
+	for (int set = 0; set < 32; set++)
 	{
-		CacheLine& line = ((Cache*)mem.l1)->backdoor( i );
-		int lineAddress = line.tag * 64;
-		int x = (lineAddress / 4) & 1023, y = (lineAddress / 4) / 1024;
-		for (int j = 0; j < 16; j++)
-			screen->Plot( x + 10 + j, y + 10, ((uint*)line.bytes)[j] );
+		for (int i = 0; i < 2; i++)
+		{
+			CacheLine& line = ((Cache*)mem.l1)->backdoor(set, i);
+			int lineAddress = (line.tag * 32 + set) * mem.l1->lineWidth;
+			int x = (lineAddress / 4) & 1023, y = (lineAddress / 4) / 1024;
+			for (int j = 0; j < 16; j++)
+				screen->Plot(x + 10 + j, y + 10, ((uint*)line.bytes)[j]);
+		}
 	}
 
 	// draw hit/miss graphs
@@ -68,7 +71,7 @@ void Game::Tick( float )
 
 	// update memory contents
 
-#if 1
+#if 0
 	// simple spiral							ACCESS PATTERN: STRUCTURED
 	for (int i = 0; i < 10; i++)
 	{

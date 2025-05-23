@@ -32,54 +32,53 @@ CacheLine Memory::ReadLine( uint address )
 
 void Cache::WriteLine( uint address, const CacheLine& line )
 {
-	// verify that the address is a multiple of the cacheline width
-	assert( (address & lineWidth - 1) == 0 );
-
-	// verify that the provided cacheline has the right tag
-	assert( (address / lineWidth) == line.tag );
+	int set = getSetIndex(address);
+	uint tag = getTag(address);
 
 	// fully associative: see if any of the slots match our address
-	for (int i = 0; i < numSlots; i++) if (slot[i].tag == line.tag)
+	for (int i = 0; i < setSize; i++)
 	{
-		// cacheline is already in the cache; overwrite
-		slot[i] = line;
-		w_hit++;
-		return;
+		if (slot[set][i].tag == tag)
+		{
+			slot[set][i] = line;
+			slot[set][i].tag = tag;
+			slot[set][i].dirty = true;
+			w_hit++;
+			return;
+		}
 	}
 
 	// address not found; evict a line
-	int slotToEvict = RandomUInt() % numSlots;
-	if (slot[slotToEvict].dirty)
+	int slotToEvict = RandomUInt() % setSize;
+	if (slot[set][slotToEvict].dirty)
 	{
 		// evicted line is dirty; write to next level
-		nextLevel->WriteLine( slot[slotToEvict].tag * lineWidth, slot[slotToEvict] );
+		nextLevel->WriteLine(slot[set][slotToEvict].tag * lineWidth, slot[set][slotToEvict]);
 	}
-	slot[slotToEvict] = line;
+	slot[set][slotToEvict] = line;
 	w_miss++;
 }
 
 CacheLine Cache::ReadLine( uint address )
 {
-	// verify that the address is a multiple of the cacheline width
-	assert( (address & lineWidth - 1) == 0 );
+	int set = getSetIndex(address);
+	uint tag = getTag(address);
 
-	// fully associative: see if any of the slots match our address
-	uint addressTag = address / lineWidth;
-	for (int i = 0; i < numSlots; i++)
+	for (int i = 0; i < setSize; i++)
 	{
-		if (slot[i].tag == addressTag)
+		if (slot[set][i].tag == tag)
 		{
 			// cacheline is in the cache; return data
 			r_hit++;
-			return slot[i]; // by value
+			return slot[set][i]; // by value
 		}
 	}
 
 	// data is not in this cache; ask the next level
-	CacheLine line = nextLevel->ReadLine( address );
+	CacheLine line = nextLevel->ReadLine(address);
 
 	// store the retrieved line in this cache
-	WriteLine( address, line );
+	WriteLine(address, line);
 
 	// return the requested data
 	r_miss++;

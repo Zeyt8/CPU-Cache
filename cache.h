@@ -50,24 +50,46 @@ public:
 class Cache : public Level // cache level for the memory hierarchy
 {
 public:
-	Cache(int size, int lineWidth)
+	Cache(int size, int lineWidth, int setSize)
 	{
 		this->size = size;
 		this->lineWidth = lineWidth;
-		numSlots = size / lineWidth;
-		slot = new CacheLine[numSlots];
-		for (int i = 0; i < numSlots; i++)
+		this->setSize = setSize;
+		numSets = (size / lineWidth) / setSize;
+		slot = new CacheLine*[numSets];
+		for (int i = 0; i < numSets; i++)
 		{
-			slot[i] = CacheLine(lineWidth);
+			slot[i] = new CacheLine[setSize];
+			for (int j = 0; j < setSize; j++)
+			{
+				slot[i][j] = CacheLine(lineWidth);
+			}
 		}
 	}
-	~Cache() { delete[] slot; }
+	~Cache()
+	{
+		for (int i = 0; i < numSets; i++)
+		{
+			delete[] slot[i];
+		}
+		delete[] slot;
+	}
 	void WriteLine( uint address, const CacheLine& line );
 	CacheLine ReadLine( uint address );
-	CacheLine& backdoor( int i ) { return slot[i]; } /* for visualization without side effects */
+	CacheLine& backdoor(int set, int i) { return slot[set][i]; } /* for visualization without side effects */
 private:
-	CacheLine* slot = nullptr;
-	int numSlots = 0;
+	CacheLine** slot = nullptr;
+	int numSets = 0;
+	int setSize = 0;
+
+	int getSetIndex(uint address) const
+	{
+		return (address / lineWidth) % numSets;
+	}
+	uint getTag(uint address) const
+	{
+		return (address / lineWidth) / numSets;
+	}
 };
 
 class Memory : public Level // DRAM level for the memory hierarchy
@@ -92,9 +114,9 @@ class MemHierarchy // memory hierarchy
 public:
 	MemHierarchy()
 	{
-		l1 = new Cache(4096, 64);
-		l1->nextLevel = l2 = new Cache(4096, 64);
-		l2->nextLevel = l3 = new Cache(4096, 64);
+		l1 = new Cache(4096, 64, 2);
+		l1->nextLevel = l2 = new Cache(4096*2, 64, 2);
+		l2->nextLevel = l3 = new Cache(4096*4, 64, 2);
 		l3->nextLevel = memory = new Memory(64);
 	}
 	void WriteByte( uint address, uchar value );
