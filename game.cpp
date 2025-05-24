@@ -118,12 +118,11 @@ void Game::Tick( float )
 												mem.ReadUint _oOo_oOo_ )+545)
 	/* END OF BLACK BOX CODE */;}break;}}}
 #elif PATTERN == 2
-	for (int offset = 0; offset < 64; offset += 8)
+	for (int offset = 0; offset < 32; offset += 8)
 	{
-		for (int addr = offset; addr < DRAMSIZE; addr += 128)
+		for (int addr = offset; addr < DRAMSIZE; addr += 64)
 		{
-			// alternate read and write to stress both
-			if ((addr / 128) % 2 == 0)
+			if ((addr / 64) % 2 == 0)
 				mem.WriteUint(addr, 0x77ff77);
 			else
 				mem.ReadUint(addr);

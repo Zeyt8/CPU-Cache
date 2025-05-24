@@ -40,6 +40,8 @@ struct CacheLine
 	uint tag = 0;
 	bool dirty = false;
 	int lineWidth = 0;
+	int accessCounter;
+	int lastAccessed = 0;
 };
 
 class Level // abstract base class for a level in the memory hierarchy
@@ -88,7 +90,8 @@ public:
 	int setSize = 0;
 private:
 	CacheLine** slot = nullptr;
-	EvictionPolicy evictionPolicy = EvictionPolicy::RANDOM; // default eviction policy
+	EvictionPolicy evictionPolicy = EvictionPolicy::RANDOM;
+	int totalAccesses = 0;
 
 	int getSetIndex(uint address) const
 	{

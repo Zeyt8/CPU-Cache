@@ -55,9 +55,27 @@ void Cache::WriteLine( uint address, const CacheLine& line )
 	}
 	else if (evictionPolicy == EvictionPolicy::LFU)
 	{
+		int minFreq = slot[set][0].accessCounter;
+		for (int i = 1; i < setSize; i++)
+		{
+			if (slot[set][i].accessCounter < minFreq)
+			{
+				minFreq = slot[set][i].accessCounter;
+				slotToEvict = i;
+			}
+		}
 	}
 	else if (evictionPolicy == EvictionPolicy::LRU)
 	{
+		int minTime = slot[set][0].lastAccessed;
+		for (int i = 1; i < setSize; i++)
+		{
+			if (slot[set][i].lastAccessed < minTime)
+			{
+				minTime = slot[set][i].lastAccessed;
+				slotToEvict = i;
+			}
+		}
 	}
 	if (slot[set][slotToEvict].dirty)
 	{
