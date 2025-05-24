@@ -23,12 +23,39 @@ void Game::VisualizeMem()
 
 	// draw the contents of the first cache level over the DRAM contents
 	// fully hardcoded for the sample cache (size, associative, 1 layer)
-	for (int set = 0; set < 32; set++)
+	Cache* l1 = (Cache*)mem.l1;
+	for (int set = 0; set < l1->numSets; set++)
 	{
-		for (int i = 0; i < 2; i++)
+		for (int i = 0; i < l1->setSize; i++)
 		{
 			CacheLine& line = ((Cache*)mem.l1)->backdoor(set, i);
-			int lineAddress = (line.tag * 32 + set) * mem.l1->lineWidth;
+			int lineAddress = (line.tag * l1->numSets + set) * mem.l1->lineWidth;
+			int x = (lineAddress / 4) & 1023, y = (lineAddress / 4) / 1024;
+			for (int j = 0; j < 16; j++)
+				screen->Plot(x + 10 + j, y + 10, ((uint*)line.bytes)[j]);
+		}
+	}
+
+	Cache* l2 = (Cache*)mem.l2;
+	for (int set = 0; set < l2->numSets; set++)
+	{
+		for (int i = 0; i < l2->setSize; i++)
+		{
+			CacheLine& line = ((Cache*)mem.l2)->backdoor(set, i);
+			int lineAddress = (line.tag * l2->numSets + set) * mem.l2->lineWidth;
+			int x = (lineAddress / 4) & 1023, y = (lineAddress / 4) / 1024;
+			for (int j = 0; j < 16; j++)
+				screen->Plot(x + 10 + j, y + 10, ((uint*)line.bytes)[j]);
+		}
+	}
+
+	Cache* l3 = (Cache*)mem.l3;
+	for (int set = 0; set < l3->numSets; set++)
+	{
+		for (int i = 0; i < l3->setSize; i++)
+		{
+			CacheLine& line = ((Cache*)mem.l3)->backdoor(set, i);
+			int lineAddress = (line.tag * l3->numSets + set) * mem.l3->lineWidth;
 			int x = (lineAddress / 4) & 1023, y = (lineAddress / 4) / 1024;
 			for (int j = 0; j < 16; j++)
 				screen->Plot(x + 10 + j, y + 10, ((uint*)line.bytes)[j]);
@@ -71,7 +98,8 @@ void Game::Tick( float )
 
 	// update memory contents
 
-#if 0
+#define PATTERN 2
+#if PATTERN == 0
 	// simple spiral							ACCESS PATTERN: STRUCTURED
 	for (int i = 0; i < 10; i++)
 	{
@@ -80,7 +108,7 @@ void Game::Tick( float )
 		if (r < -300) r = -300;
 		mem.WriteUint( (x + y * 1024) * 4, 0xffff77 );
 	}
-#else
+#elif PATTERN == 1
 	// the buddhabrot based on Paul Bourke		ACCESS PATTERN: MOSTLY RANDOM
 	for(int G,M,T,E=0;++E<2;)for(G=0;++G<V
 	<<7;){double B=0,y=0,t=R(),e,z=R();for
@@ -89,6 +117,18 @@ void Game::Tick( float )
 	T;){O=400+.3*V*Q[M],N=.3*V*K[M++]+520;		mem.WriteUint _oOo_oOo_,
 												mem.ReadUint _oOo_oOo_ )+545)
 	/* END OF BLACK BOX CODE */;}break;}}}
+#elif PATTERN == 2
+	for (int offset = 0; offset < 64; offset += 8)
+	{
+		for (int addr = offset; addr < DRAMSIZE; addr += 128)
+		{
+			// alternate read and write to stress both
+			if ((addr / 128) % 2 == 0)
+				mem.WriteUint(addr, 0x77ff77);
+			else
+				mem.ReadUint(addr);
+		}
+	}
 #endif
 
 	// visualize the memory hierarchy

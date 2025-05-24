@@ -77,10 +77,10 @@ public:
 	void WriteLine( uint address, const CacheLine& line );
 	CacheLine ReadLine( uint address );
 	CacheLine& backdoor(int set, int i) { return slot[set][i]; } /* for visualization without side effects */
-private:
-	CacheLine** slot = nullptr;
 	int numSets = 0;
 	int setSize = 0;
+private:
+	CacheLine** slot = nullptr;
 
 	int getSetIndex(uint address) const
 	{
@@ -114,9 +114,9 @@ class MemHierarchy // memory hierarchy
 public:
 	MemHierarchy()
 	{
-		l1 = new Cache(4096, 64, 2);
-		l1->nextLevel = l2 = new Cache(4096*2, 64, 2);
-		l2->nextLevel = l3 = new Cache(4096*4, 64, 2);
+		l1 = new Cache(4096, 64, 64);
+		l1->nextLevel = l2 = new Cache(4096*2, 64, 64 * 2);
+		l2->nextLevel = l3 = new Cache(4096*4, 64, 64 * 4);
 		l3->nextLevel = memory = new Memory(64);
 	}
 	void WriteByte( uint address, uchar value );
