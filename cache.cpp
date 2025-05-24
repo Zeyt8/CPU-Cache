@@ -32,24 +32,32 @@ CacheLine Memory::ReadLine( uint address )
 
 void Cache::WriteLine( uint address, const CacheLine& line )
 {
-	int set = getSetIndex(address);
-	uint tag = getTag(address);
+	assert((address & lineWidth - 1) == 0);
+	assert((address / lineWidth) == line.tag);
 
-	// fully associative: see if any of the slots match our address
+	int set = getSetIndex(address);
+
 	for (int i = 0; i < setSize; i++)
 	{
-		if (slot[set][i].tag == tag)
 		{
 			slot[set][i] = line;
-			slot[set][i].tag = tag;
-			slot[set][i].dirty = true;
 			w_hit++;
 			return;
 		}
 	}
 
 	// address not found; evict a line
-	int slotToEvict = RandomUInt() % setSize;
+	int slotToEvict = 0;
+	if (evictionPolicy == EvictionPolicy::RANDOM)
+	{
+		slotToEvict = RandomUInt() % setSize;
+	}
+	else if (evictionPolicy == EvictionPolicy::LFU)
+	{
+	}
+	else if (evictionPolicy == EvictionPolicy::LRU)
+	{
+	}
 	if (slot[set][slotToEvict].dirty)
 	{
 		// evicted line is dirty; write to next level
@@ -61,8 +69,10 @@ void Cache::WriteLine( uint address, const CacheLine& line )
 
 CacheLine Cache::ReadLine( uint address )
 {
+	assert((address & lineWidth - 1) == 0);
+
 	int set = getSetIndex(address);
-	uint tag = getTag(address);
+	uint tag = address / lineWidth;
 
 	for (int i = 0; i < setSize; i++)
 	{

@@ -29,7 +29,7 @@ void Game::VisualizeMem()
 		for (int i = 0; i < l1->setSize; i++)
 		{
 			CacheLine& line = ((Cache*)mem.l1)->backdoor(set, i);
-			int lineAddress = (line.tag * l1->numSets + set) * mem.l1->lineWidth;
+			int lineAddress = line.tag * mem.l1->lineWidth;
 			int x = (lineAddress / 4) & 1023, y = (lineAddress / 4) / 1024;
 			for (int j = 0; j < 16; j++)
 				screen->Plot(x + 10 + j, y + 10, ((uint*)line.bytes)[j]);
@@ -98,7 +98,7 @@ void Game::Tick( float )
 
 	// update memory contents
 
-#define PATTERN 2
+#define PATTERN 0
 #if PATTERN == 0
 	// simple spiral							ACCESS PATTERN: STRUCTURED
 	for (int i = 0; i < 10; i++)

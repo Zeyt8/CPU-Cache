@@ -8,6 +8,12 @@ namespace Tmpl8 {
 
 #define DRAMSIZE		3276800				// 3.125MB; 1024x800 pixels
 
+enum EvictionPolicy {
+	LRU,
+	LFU,
+	RANDOM
+};
+
 struct CacheLine
 {
 	CacheLine() = default;
@@ -50,11 +56,12 @@ public:
 class Cache : public Level // cache level for the memory hierarchy
 {
 public:
-	Cache(int size, int lineWidth, int setSize)
+	Cache(int size, int lineWidth, int setSize, EvictionPolicy policy)
 	{
 		this->size = size;
 		this->lineWidth = lineWidth;
 		this->setSize = setSize;
+		this->evictionPolicy = policy;
 		numSets = (size / lineWidth) / setSize;
 		slot = new CacheLine*[numSets];
 		for (int i = 0; i < numSets; i++)
@@ -81,14 +88,11 @@ public:
 	int setSize = 0;
 private:
 	CacheLine** slot = nullptr;
+	EvictionPolicy evictionPolicy = EvictionPolicy::RANDOM; // default eviction policy
 
 	int getSetIndex(uint address) const
 	{
 		return (address / lineWidth) % numSets;
-	}
-	uint getTag(uint address) const
-	{
-		return (address / lineWidth) / numSets;
 	}
 };
 
@@ -114,9 +118,9 @@ class MemHierarchy // memory hierarchy
 public:
 	MemHierarchy()
 	{
-		l1 = new Cache(4096, 64, 64);
-		l1->nextLevel = l2 = new Cache(4096*2, 64, 64 * 2);
-		l2->nextLevel = l3 = new Cache(4096*4, 64, 64 * 4);
+		l1 = new Cache(4096, 64, 4, EvictionPolicy::RANDOM);
+		l1->nextLevel = l2 = new Cache(4096*2, 64, 4, EvictionPolicy::RANDOM);
+		l2->nextLevel = l3 = new Cache(4096*4, 64, 4, EvictionPolicy::RANDOM);
 		l3->nextLevel = memory = new Memory(64);
 	}
 	void WriteByte( uint address, uchar value );
