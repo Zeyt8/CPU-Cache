@@ -39,6 +39,7 @@ void Cache::WriteLine( uint address, const CacheLine& line )
 
 	for (int i = 0; i < setSize; i++)
 	{
+		if (slot[set][i].tag == line.tag)
 		{
 			slot[set][i] = line;
 			w_hit++;
