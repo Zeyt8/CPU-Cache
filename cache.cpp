@@ -42,6 +42,9 @@ void Cache::WriteLine( uint address, const CacheLine& line )
 		if (slot[set][i].tag == line.tag)
 		{
 			slot[set][i] = line;
+			totalAccesses++;
+			slot[set][i].accessCounter++;
+			slot[set][i].lastAccessed = totalAccesses;
 			w_hit++;
 			return;
 		}
@@ -83,6 +86,9 @@ void Cache::WriteLine( uint address, const CacheLine& line )
 		nextLevel->WriteLine(slot[set][slotToEvict].tag * lineWidth, slot[set][slotToEvict]);
 	}
 	slot[set][slotToEvict] = line;
+	totalAccesses++;
+	slot[set][slotToEvict].accessCounter = 1;
+	slot[set][slotToEvict].lastAccessed = totalAccesses;
 	w_miss++;
 }
 

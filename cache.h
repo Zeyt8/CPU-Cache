@@ -17,8 +17,8 @@ enum EvictionPolicy {
 struct CacheLine
 {
 	CacheLine() = default;
-	CacheLine(int lineWidth) : bytes(new uchar[lineWidth]), tag(0), dirty(false), lineWidth(lineWidth) {}
-	CacheLine(const CacheLine& other) : bytes(new uchar[other.lineWidth]), tag(other.tag), dirty(other.dirty), lineWidth(other.lineWidth)
+	CacheLine(int lineWidth) : bytes(new uchar[lineWidth]), tag(0), dirty(false), lineWidth(lineWidth), accessCounter(0), lastAccessed(0) {}
+	CacheLine(const CacheLine& other) : bytes(new uchar[other.lineWidth]), tag(other.tag), dirty(other.dirty), lineWidth(other.lineWidth), accessCounter(other.accessCounter), lastAccessed(other.lastAccessed)
 	{
 		memcpy(bytes, other.bytes, lineWidth);
 	}
@@ -33,6 +33,8 @@ struct CacheLine
 			memcpy(bytes, other.bytes, lineWidth);
 			tag = other.tag;
 			dirty = other.dirty;
+			accessCounter = other.accessCounter;
+			lastAccessed = other.lastAccessed;
 		}
 		return *this;
 	}
@@ -40,7 +42,7 @@ struct CacheLine
 	uint tag = 0;
 	bool dirty = false;
 	int lineWidth = 0;
-	int accessCounter;
+	int accessCounter = 0;
 	int lastAccessed = 0;
 };
 
@@ -121,9 +123,9 @@ class MemHierarchy // memory hierarchy
 public:
 	MemHierarchy()
 	{
-		l1 = new Cache(4096, 64, 4, EvictionPolicy::RANDOM);
-		l1->nextLevel = l2 = new Cache(4096*2, 64, 4, EvictionPolicy::RANDOM);
-		l2->nextLevel = l3 = new Cache(4096*4, 64, 4, EvictionPolicy::RANDOM);
+		l1 = new Cache(4096, 64, 4, EvictionPolicy::LRU);
+		l1->nextLevel = l2 = new Cache(4096*2, 64, 4, EvictionPolicy::LRU);
+		l2->nextLevel = l3 = new Cache(4096*4, 64, 4, EvictionPolicy::LRU);
 		l3->nextLevel = memory = new Memory(64);
 	}
 	void WriteByte( uint address, uchar value );
