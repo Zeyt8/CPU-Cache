@@ -30,6 +30,21 @@ CacheLine Memory::ReadLine( uint address )
 	return retVal;
 }
 
+void Cache::RemoveLine(uint address)
+{
+	int set = getSetIndex(address);
+	uint tag = address / lineWidth;
+
+	for (int i = 0; i < setSize; i++)
+	{
+		if (slot[set][i].tag == tag)
+		{
+			slot[set][i] = CacheLine(lineWidth);
+			return;
+		}
+	}
+}
+
 void Cache::WriteLine( uint address, const CacheLine& line )
 {
 	assert((address & lineWidth - 1) == 0);
@@ -90,6 +105,11 @@ void Cache::WriteLine( uint address, const CacheLine& line )
 	slot[set][slotToEvict].accessCounter = 1;
 	slot[set][slotToEvict].lastAccessed = totalAccesses;
 	w_miss++;
+
+	if (!inclusive && nextLevel)
+	{
+		nextLevel->RemoveLine(address);
+	}
 }
 
 CacheLine Cache::ReadLine( uint address )

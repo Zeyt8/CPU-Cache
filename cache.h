@@ -51,6 +51,7 @@ class Level // abstract base class for a level in the memory hierarchy
 public:
 	virtual void WriteLine( uint address, const CacheLine& line ) = 0;
 	virtual CacheLine ReadLine( uint address ) = 0;
+	virtual void RemoveLine(uint address) {}
 	Level* nextLevel = 0;
 	uint r_hit = 0, r_miss = 0, w_hit = 0, w_miss = 0;
 	int lineWidth = 0;
@@ -60,12 +61,13 @@ public:
 class Cache : public Level // cache level for the memory hierarchy
 {
 public:
-	Cache(int size, int lineWidth, int setSize, EvictionPolicy policy)
+	Cache(int size, int lineWidth, int setSize, EvictionPolicy policy, bool inclusive)
 	{
 		this->size = size;
 		this->lineWidth = lineWidth;
 		this->setSize = setSize;
 		this->evictionPolicy = policy;
+		this->inclusive = inclusive;
 		numSets = (size / lineWidth) / setSize;
 		slot = new CacheLine*[numSets];
 		for (int i = 0; i < numSets; i++)
@@ -87,6 +89,7 @@ public:
 	}
 	void WriteLine( uint address, const CacheLine& line );
 	CacheLine ReadLine( uint address );
+	void RemoveLine(uint address) override;
 	CacheLine& backdoor(int set, int i) { return slot[set][i]; } /* for visualization without side effects */
 	int numSets = 0;
 	int setSize = 0;
@@ -94,6 +97,7 @@ private:
 	CacheLine** slot = nullptr;
 	EvictionPolicy evictionPolicy = EvictionPolicy::RANDOM;
 	int totalAccesses = 0;
+	bool inclusive = true;
 
 	int getSetIndex(uint address) const
 	{
@@ -123,9 +127,9 @@ class MemHierarchy // memory hierarchy
 public:
 	MemHierarchy()
 	{
-		l1 = new Cache(4096, 64, 4, EvictionPolicy::LRU);
-		l1->nextLevel = l2 = new Cache(4096*2, 64, 4, EvictionPolicy::LRU);
-		l2->nextLevel = l3 = new Cache(4096*4, 64, 4, EvictionPolicy::LRU);
+		l1 = new Cache(4096, 64, 4, EvictionPolicy::RANDOM, false);
+		l1->nextLevel = l2 = new Cache(4096*2, 64, 4, EvictionPolicy::RANDOM, false);
+		l2->nextLevel = l3 = new Cache(4096*4, 64, 4, EvictionPolicy::RANDOM, false);
 		l3->nextLevel = memory = new Memory(64);
 	}
 	void WriteByte( uint address, uchar value );
