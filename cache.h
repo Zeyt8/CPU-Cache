@@ -90,6 +90,7 @@ public:
 	void WriteLine( uint address, const CacheLine& line );
 	CacheLine ReadLine( uint address );
 	void RemoveLine(uint address) override;
+	void EvictLine(uint address, CacheLine line);
 	CacheLine& backdoor(int set, int i) { return slot[set][i]; } /* for visualization without side effects */
 	int numSets = 0;
 	int setSize = 0;

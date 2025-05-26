@@ -45,25 +45,16 @@ void Cache::RemoveLine(uint address)
 	}
 }
 
-void Cache::WriteLine( uint address, const CacheLine& line )
+void Cache::EvictLine(uint address, CacheLine line)
 {
+	// verify that the address is a multiple of the cacheline width
 	assert((address & lineWidth - 1) == 0);
+
+	// verify that the provided cacheline has the right tag
 	assert((address / lineWidth) == line.tag);
 
+	// compute number of slots in cache
 	int set = getSetIndex(address);
-
-	for (int i = 0; i < setSize; i++)
-	{
-		if (slot[set][i].tag == line.tag)
-		{
-			slot[set][i] = line;
-			totalAccesses++;
-			slot[set][i].accessCounter++;
-			slot[set][i].lastAccessed = totalAccesses;
-			w_hit++;
-			return;
-		}
-	}
 
 	// address not found; evict a line
 	int slotToEvict = 0;
@@ -101,15 +92,39 @@ void Cache::WriteLine( uint address, const CacheLine& line )
 		nextLevel->WriteLine(slot[set][slotToEvict].tag * lineWidth, slot[set][slotToEvict]);
 	}
 	slot[set][slotToEvict] = line;
-	totalAccesses++;
 	slot[set][slotToEvict].accessCounter = 1;
 	slot[set][slotToEvict].lastAccessed = totalAccesses;
-	w_miss++;
 
 	if (!inclusive && nextLevel)
 	{
 		nextLevel->RemoveLine(address);
 	}
+}
+
+void Cache::WriteLine( uint address, const CacheLine& line )
+{
+	assert((address & lineWidth - 1) == 0);
+	assert((address / lineWidth) == line.tag);
+
+	int set = getSetIndex(address);
+
+	for (int i = 0; i < setSize; i++)
+	{
+		if (slot[set][i].tag == line.tag)
+		{
+			slot[set][i] = line;
+			totalAccesses++;
+			slot[set][i].accessCounter++;
+			slot[set][i].lastAccessed = totalAccesses;
+			w_hit++;
+			return;
+		}
+	}
+
+	// address not found; evict a line
+	totalAccesses++;
+	EvictLine(address, line);
+	w_miss++;
 }
 
 CacheLine Cache::ReadLine( uint address )
@@ -133,7 +148,7 @@ CacheLine Cache::ReadLine( uint address )
 	CacheLine line = nextLevel->ReadLine(address);
 
 	// store the retrieved line in this cache
-	WriteLine(address, line);
+	EvictLine(address, line);
 
 	// return the requested data
 	r_miss++;
