@@ -98,7 +98,7 @@ void Game::Tick( float )
 
 	// update memory contents
 
-#define PATTERN 0
+#define PATTERN 2
 #if PATTERN == 0
 	// simple spiral							ACCESS PATTERN: STRUCTURED
 	for (int i = 0; i < 10; i++)
@@ -118,14 +118,42 @@ void Game::Tick( float )
 												mem.ReadUint _oOo_oOo_ )+545)
 	/* END OF BLACK BOX CODE */;}break;}}}
 #elif PATTERN == 2
-	for (int offset = 0; offset < 32; offset += 8)
+	for (int i = 0; i < 4096; i++)
 	{
-		for (int addr = offset; addr < DRAMSIZE; addr += 64)
+		int addr = (i % 64) * 64;
+		if (i % 2 == 0)
 		{
-			if ((addr / 64) % 2 == 0)
-				mem.WriteUint(addr, 0x77ff77);
-			else
-				mem.ReadUint(addr);
+			mem.ReadUint(addr);
+		}
+		else
+		{
+			mem.WriteUint(addr, 0xffff77);
+		}
+	}
+
+	for (int i = 1024; i < 2048; i++)
+	{
+		int addr = i * 64;
+		if (i % 2 == 0)
+		{
+			mem.ReadUint(addr);
+		}
+		else
+		{
+			mem.WriteUint(addr, 0xffff77);
+		}
+	}
+
+	for (int i = 0; i < 4096; i++)
+	{
+		int addr = (i % 64) * 64;
+		if (i % 2 == 0)
+		{
+			mem.ReadUint(addr);
+		}
+		else
+		{
+			mem.WriteUint(addr, 0xffff77);
 		}
 	}
 #endif

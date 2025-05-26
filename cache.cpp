@@ -30,7 +30,7 @@ CacheLine Memory::ReadLine( uint address )
 	return retVal;
 }
 
-void Cache::RemoveLine(uint address)
+void Cache::ReplaceLine(uint address, CacheLine line)
 {
 	int set = getSetIndex(address);
 	uint tag = address / lineWidth;
@@ -53,10 +53,8 @@ void Cache::EvictLine(uint address, CacheLine line)
 	// verify that the provided cacheline has the right tag
 	assert((address / lineWidth) == line.tag);
 
-	// compute number of slots in cache
 	int set = getSetIndex(address);
 
-	// address not found; evict a line
 	int slotToEvict = 0;
 	if (evictionPolicy == EvictionPolicy::RANDOM)
 	{
@@ -94,11 +92,6 @@ void Cache::EvictLine(uint address, CacheLine line)
 	slot[set][slotToEvict] = line;
 	slot[set][slotToEvict].accessCounter = 1;
 	slot[set][slotToEvict].lastAccessed = totalAccesses;
-
-	if (!inclusive && nextLevel)
-	{
-		nextLevel->RemoveLine(address);
-	}
 }
 
 void Cache::WriteLine( uint address, const CacheLine& line )
@@ -146,6 +139,11 @@ CacheLine Cache::ReadLine( uint address )
 
 	// data is not in this cache; ask the next level
 	CacheLine line = nextLevel->ReadLine(address);
+
+	if (!inclusive && nextLevel)
+	{
+		nextLevel->ReplaceLine(address, line);
+	}
 
 	// store the retrieved line in this cache
 	EvictLine(address, line);

@@ -51,7 +51,7 @@ class Level // abstract base class for a level in the memory hierarchy
 public:
 	virtual void WriteLine( uint address, const CacheLine& line ) = 0;
 	virtual CacheLine ReadLine( uint address ) = 0;
-	virtual void RemoveLine(uint address) {}
+	virtual void ReplaceLine(uint address, CacheLine line) {}
 	Level* nextLevel = 0;
 	uint r_hit = 0, r_miss = 0, w_hit = 0, w_miss = 0;
 	int lineWidth = 0;
@@ -89,7 +89,7 @@ public:
 	}
 	void WriteLine( uint address, const CacheLine& line );
 	CacheLine ReadLine( uint address );
-	void RemoveLine(uint address) override;
+	void ReplaceLine(uint address, CacheLine line) override;
 	void EvictLine(uint address, CacheLine line);
 	CacheLine& backdoor(int set, int i) { return slot[set][i]; } /* for visualization without side effects */
 	int numSets = 0;
@@ -128,9 +128,9 @@ class MemHierarchy // memory hierarchy
 public:
 	MemHierarchy()
 	{
-		l1 = new Cache(4096, 64, 4, EvictionPolicy::RANDOM, false);
-		l1->nextLevel = l2 = new Cache(4096*2, 64, 4, EvictionPolicy::RANDOM, false);
-		l2->nextLevel = l3 = new Cache(4096*4, 64, 4, EvictionPolicy::RANDOM, false);
+		l1 = new Cache(4096, 64, 8, EvictionPolicy::RANDOM, true);
+		l1->nextLevel = l2 = new Cache(4096*4, 64, 8, EvictionPolicy::RANDOM, false);
+		l2->nextLevel = l3 = new Cache(4096*8, 64, 12, EvictionPolicy::RANDOM, false);
 		l3->nextLevel = memory = new Memory(64);
 	}
 	void WriteByte( uint address, uchar value );
