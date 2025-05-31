@@ -7,6 +7,7 @@ static Graph gr[8];
 #define _oOo_oOo_ (O>=V|N>=800?0:(((N<<10)+O)*4)
 uint* image[4], I,N,F,O,M,_O,V=2019; double K[999], Q[999];
 float R(){I^=I<<13;I^=I>>17;I^=I<<5;return I*2.3283064365387e-10f*6-3;} // rng
+static int pattern2Max = 1024;
 
 // -----------------------------------------------------------
 // Visualization of the data stored in the memory hierarchy
@@ -98,7 +99,7 @@ void Game::Tick( float )
 
 	// update memory contents
 
-#define PATTERN 2
+#define PATTERN 0
 #if PATTERN == 0
 	// simple spiral							ACCESS PATTERN: STRUCTURED
 	for (int i = 0; i < 10; i++)
@@ -118,43 +119,18 @@ void Game::Tick( float )
 												mem.ReadUint _oOo_oOo_ )+545)
 	/* END OF BLACK BOX CODE */;}break;}}}
 #elif PATTERN == 2
-	for (int i = 0; i < 4096; i++)
+	for (int i = pattern2Max - 512; i < pattern2Max; i++)
 	{
-		int addr = (i % 64) * 64;
-		if (i % 2 == 0)
+		for (int j = 0; j < i; j++)
 		{
-			mem.ReadUint(addr);
+			mem.ReadUint(j * 4);
 		}
-		else
-		{
-			mem.WriteUint(addr, 0xffff77);
-		}
+		mem.WriteUint((i + 1) * 4, 0xffff77);
 	}
-
-	for (int i = 1024; i < 2048; i++)
+	pattern2Max += 512;
+	if (pattern2Max > DRAMSIZE / 32)
 	{
-		int addr = i * 64;
-		if (i % 2 == 0)
-		{
-			mem.ReadUint(addr);
-		}
-		else
-		{
-			mem.WriteUint(addr, 0xffff77);
-		}
-	}
-
-	for (int i = 0; i < 4096; i++)
-	{
-		int addr = (i % 64) * 64;
-		if (i % 2 == 0)
-		{
-			mem.ReadUint(addr);
-		}
-		else
-		{
-			mem.WriteUint(addr, 0xffff77);
-		}
+		pattern2Max = 512;
 	}
 #endif
 
